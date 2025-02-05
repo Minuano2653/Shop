@@ -1,7 +1,6 @@
 package com.example.shop.presentation
 
 import android.os.Bundle
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -26,6 +25,8 @@ class MainActivity : AppCompatActivity() {
         viewModel.shopList.observe(this) {
             shopListAdapter.submitList(it)
         }
+
+        setupButtonAddClickListener()
     }
 
     private fun setupRecyclerView() {
@@ -46,9 +47,17 @@ class MainActivity : AppCompatActivity() {
         setupSwipeListener()
     }
 
+    private fun setupButtonAddClickListener() {
+        binding.buttonAddShopItem.setOnClickListener {
+            val intent = ShopItemActivity.newIntentAddItem(this)
+            startActivity(intent)
+        }
+    }
+
     private fun setupClickListener() {
-        shopListAdapter.onShopItemClickListener = {
-            Log.d("OnClickListener", it.toString())
+        shopListAdapter.onShopItemClickListener = { shopItem ->
+            val intent = ShopItemActivity.newIntentEditItem(this, shopItem.id)
+            startActivity(intent)
         }
     }
 
