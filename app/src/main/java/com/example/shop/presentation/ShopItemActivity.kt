@@ -5,115 +5,39 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.example.shop.R
 import com.example.shop.databinding.ActivityShopItemBinding
 import com.example.shop.domain.ShopItem
 
-class ShopItemActivity: AppCompatActivity() {
+class ShopItemActivity: AppCompatActivity(), ShopItemFragment.OnEditingFinishedListener {
 
     private lateinit var binding: ActivityShopItemBinding
-    private lateinit var viewModel: ShopItemViewModel
 
     private var screenMode = MODE_UNKNOWN
     private var shopItemId = ShopItem.UNDEFINED_ID
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         parseIntent()
-
         binding = ActivityShopItemBinding.inflate(layoutInflater).also { setContentView(it.root) }
-        viewModel = ViewModelProvider(this)[ShopItemViewModel::class.java]
-
-        launchRightMode()
-        setupEtNameTextChangedListener()
-        setupEtCountTextChangedListener()
-        observeViewModel()
-
-    }
-
-    private fun observeViewModel() {
-        viewModel.errorInputName.observe(this) {
-            val message = if (it) {
-                getString(R.string.error_input_name)
-            } else {
-                null
-            }
-            binding.tilName.error = message
-        }
-
-        viewModel.errorInputCount.observe(this) {
-            val message = if (it) {
-                getString(R.string.error_input_count)
-            } else {
-                null
-            }
-            binding.tilCount.error = message
-        }
-
-        viewModel.shouldCloseScreen.observe(this) {
-            finish()
+        if (savedInstanceState == null) {
+            launchRightMode()
         }
     }
 
     private fun launchRightMode() {
-        when (screenMode) {
-            MODE_EDIT -> launchEditMode()
-            MODE_ADD -> launchAddMode()
+        val fragment = when (screenMode) {
+            MODE_EDIT -> ShopItemFragment.newInstanceEditItem(shopItemId)
+            MODE_ADD -> ShopItemFragment.newInstanceAddItem()
+            else -> throw IllegalArgumentException("Unknown screen mode: $screenMode")
         }
-    }
-
-    private fun launchEditMode() {
-        viewModel.getShopItem(shopItemId)
-        viewModel.shopItem.observe(this) {
-            binding.etName.setText(it.name)
-            binding.etCount.setText(it.count.toString())
-        }
-
-        binding.saveButton.setOnClickListener {
-            viewModel.editShopItem(
-                binding.etName.text?.toString(),
-                binding.etCount.text?.toString()
-            )
-        }
-    }
-
-    private fun launchAddMode() {
-        viewModel.addShopItem(
-            binding.etName.text?.toString(),
-            binding.etCount.text?.toString()
-        )
-    }
-
-    private fun setupEtNameTextChangedListener() {
-        binding.etName.addTextChangedListener(object: TextWatcher {
-            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-            }
-
-            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                viewModel.resetErrorInputName()
-            }
-
-            override fun afterTextChanged(p0: Editable?) {
-            }
-
-        })
-    }
-
-    private fun setupEtCountTextChangedListener() {
-        binding.etCount.addTextChangedListener(object: TextWatcher {
-            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-            }
-
-            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                viewModel.resetErrorInputCount()
-            }
-
-            override fun afterTextChanged(p0: Editable?) {
-            }
-
-        })
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.shop_item_container, fragment)
+            .commit()
     }
 
     private fun parseIntent() {
@@ -152,5 +76,9 @@ class ShopItemActivity: AppCompatActivity() {
                 putExtra(EXTRA_SHOP_ITEM_ID, shopItemId)
             }
         }
+    }
+
+    override fun onEditingFinished() {
+        finish()
     }
 }
